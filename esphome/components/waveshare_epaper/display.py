@@ -7,6 +7,7 @@ from esphome.const import (
     CONF_DC_PIN,
     CONF_FULL_UPDATE_EVERY,
     CONF_ID,
+    CONF_INITIAL_MODE,
     CONF_LAMBDA,
     CONF_MODEL,
     CONF_PAGES,
@@ -168,6 +169,16 @@ def validate_reset_pin_required(config):
         )
     return config
 
+def validate_grayscale4_supported(config):
+    print(config[CONF_MODEL])
+    if CONF_INITIAL_MODE in config:
+        if config[CONF_MODEL] in ['4.20in-v2']:
+            return config
+        raise cv.Invalid(
+            f"'{CONF_INITIAL_MODE}' is supported for model {config[CONF_MODEL]}"
+        )
+    return config
+
 
 CONFIG_SCHEMA = cv.All(
     display.FULL_DISPLAY_SCHEMA.extend(
@@ -182,12 +193,14 @@ CONFIG_SCHEMA = cv.All(
                 cv.positive_time_period_milliseconds,
                 cv.Range(max=core.TimePeriod(milliseconds=500)),
             ),
+            cv.Optional(CONF_INITIAL_MODE): cv.int_range(min=1, max=3),
         }
     )
     .extend(cv.polling_component_schema("1s"))
     .extend(spi.spi_device_schema()),
     validate_full_update_every_only_types_ac,
     validate_reset_pin_required,
+    validate_grayscale4_supported,
     cv.has_at_most_one_key(CONF_PAGES, CONF_LAMBDA),
 )
 
@@ -224,3 +237,5 @@ async def to_code(config):
         cg.add(var.set_full_update_every(config[CONF_FULL_UPDATE_EVERY]))
     if CONF_RESET_DURATION in config:
         cg.add(var.set_reset_duration(config[CONF_RESET_DURATION]))
+    if CONF_INITIAL_MODE in config:
+        cg.add(var.set_initial_mode(config[CONF_INITIAL_MODE]))
